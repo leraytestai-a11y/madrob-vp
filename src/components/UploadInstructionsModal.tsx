@@ -73,7 +73,7 @@ export default function UploadInstructionsModal({ onClose }: UploadInstructionsM
     try {
       const { data, error } = await supabase
         .from('measurement_fields')
-        .select('*')
+        .select('*, operations(id, display_name)')
         .order('display_name');
       if (error) throw error;
       setFields(data || []);
@@ -257,11 +257,26 @@ export default function UploadInstructionsModal({ onClose }: UploadInstructionsM
               className="w-full bg-[#0a1628] border border-slate-700 rounded-xl px-6 py-4 text-white text-lg focus:outline-none focus:border-blue-500 transition-colors"
             >
               <option value="">Choose...</option>
-              {instructionType === 'field' && fields.map((field) => (
-                <option key={field.id} value={field.id}>
-                  {field.display_name}
-                </option>
-              ))}
+              {instructionType === 'field' && (() => {
+                const grouped: Record<string, { operationName: string; fields: MeasurementField[] }> = {};
+                for (const field of fields) {
+                  const opId = (field as any).operation_id || 'no-operation';
+                  const opName = (field as any).operations?.display_name || 'No Operation';
+                  if (!grouped[opId]) grouped[opId] = { operationName: opName, fields: [] };
+                  grouped[opId].fields.push(field);
+                }
+                return Object.entries(grouped)
+                  .sort(([, a], [, b]) => a.operationName.localeCompare(b.operationName))
+                  .map(([opId, group]) => (
+                    <optgroup key={opId} label={group.operationName}>
+                      {group.fields.map((field) => (
+                        <option key={field.id} value={field.id}>
+                          {field.display_name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ));
+              })()}
               {instructionType === 'operation' && operations.map((operation) => (
                 <option key={operation.id} value={operation.id}>
                   {operation.display_name}
