@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Upload, FileText } from 'lucide-react';
+import { X, Upload, FileText, Trash2, ExternalLink } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { MeasurementField, Module, Operation } from '../types';
 
@@ -8,6 +8,12 @@ interface UploadInstructionsModalProps {
 }
 
 type InstructionType = 'field' | 'operation' | 'module';
+
+interface ExistingPdf {
+  id: string;
+  file_name: string;
+  file_url: string;
+}
 
 export default function UploadInstructionsModal({ onClose }: UploadInstructionsModalProps) {
   const [instructionType, setInstructionType] = useState<InstructionType>('field');
@@ -18,6 +24,8 @@ export default function UploadInstructionsModal({ onClose }: UploadInstructionsM
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState('');
+  const [existingPdf, setExistingPdf] = useState<ExistingPdf | null>(null);
+  const [loadingPdf, setLoadingPdf] = useState(false);
 
   useEffect(() => {
     loadFields();
@@ -27,7 +35,39 @@ export default function UploadInstructionsModal({ onClose }: UploadInstructionsM
 
   useEffect(() => {
     setSelectedId('');
+    setFile(null);
+    setMessage('');
+    setExistingPdf(null);
   }, [instructionType]);
+
+  useEffect(() => {
+    if (selectedId) {
+      loadExistingPdf(selectedId);
+    } else {
+      setExistingPdf(null);
+    }
+    setFile(null);
+    setMessage('');
+  }, [selectedId]);
+
+  async function loadExistingPdf(id: string) {
+    setLoadingPdf(true);
+    try {
+      let query = supabase.from('instruction_pdfs').select('id, file_name, file_url');
+      if (instructionType === 'field') query = query.eq('field_id', id);
+      else if (instructionType === 'operation') query = query.eq('operation_id', id);
+      else if (instructionType === 'module') query = query.eq('module_id', id);
+
+      const { data, error } = await query.maybeSingle();
+      if (error) throw error;
+      setExistingPdf(data || null);
+    } catch (error) {
+      console.error('Error loading existing PDF:', error);
+      setExistingPdf(null);
+    } finally {
+      setLoadingPdf(false);
+    }
+  }
 
   async function loadFields() {
     try {
@@ -35,7 +75,6 @@ export default function UploadInstructionsModal({ onClose }: UploadInstructionsM
         .from('measurement_fields')
         .select('*')
         .order('display_name');
-
       if (error) throw error;
       setFields(data || []);
     } catch (error) {
@@ -49,7 +88,6 @@ export default function UploadInstructionsModal({ onClose }: UploadInstructionsM
         .from('operations')
         .select('*')
         .order('display_name');
-
       if (error) throw error;
       setOperations(data || []);
     } catch (error) {
@@ -63,7 +101,6 @@ export default function UploadInstructionsModal({ onClose }: UploadInstructionsM
         .from('modules')
         .select('*')
         .order('display_name');
-
       if (error) throw error;
       setModules(data || []);
     } catch (error) {
@@ -81,6 +118,22 @@ export default function UploadInstructionsModal({ onClose }: UploadInstructionsM
         setMessage('Please select a PDF file');
         setFile(null);
       }
+    }
+  }
+
+  async function handleDeleteExisting() {
+    if (!existingPdf) return;
+    try {
+      const { error } = await supabase
+        .from('instruction_pdfs')
+        .delete()
+        .eq('id', existingPdf.id);
+      if (error) throw error;
+      setExistingPdf(null);
+      setMessage('PDF removed successfully');
+    } catch (error) {
+      console.error('Error deleting PDF:', error);
+      setMessage('Error removing PDF. Please try again.');
     }
   }
 
@@ -222,9 +275,51 @@ export default function UploadInstructionsModal({ onClose }: UploadInstructionsM
             </select>
           </div>
 
+          {selectedId && (
+            <div>
+              <label className="block text-white text-lg font-semibold mb-3">
+                Current PDF
+              </label>
+              {loadingPdf ? (
+                <div className="bg-[#0a1628] border border-slate-700 rounded-xl px-6 py-4 text-slate-400">
+                  Loading...
+                </div>
+              ) : existingPdf ? (
+                <div className="bg-[#0a1628] border border-green-700/50 rounded-xl px-5 py-4 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <FileText className="w-5 h-5 text-green-400 flex-shrink-0" />
+                    <span className="text-white font-medium truncate">{existingPdf.file_name}</span>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <a
+                      href={existingPdf.file_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 text-slate-400 hover:text-blue-400 transition-colors"
+                      title="Open PDF"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                    <button
+                      onClick={handleDeleteExisting}
+                      className="p-2 text-slate-400 hover:text-red-400 transition-colors"
+                      title="Remove PDF"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-[#0a1628] border border-slate-700 rounded-xl px-6 py-4 text-slate-500 italic">
+                  No PDF uploaded yet
+                </div>
+              )}
+            </div>
+          )}
+
           <div>
             <label className="block text-white text-lg font-semibold mb-3">
-              Select PDF File
+              {existingPdf ? 'Replace PDF File' : 'Select PDF File'}
             </label>
             <div className="border-2 border-dashed border-slate-700 rounded-xl p-8 hover:border-slate-600 transition-colors">
               <input
@@ -262,7 +357,7 @@ export default function UploadInstructionsModal({ onClose }: UploadInstructionsM
           {message && (
             <div
               className={`p-4 rounded-xl text-center font-semibold ${
-                message.includes('success')
+                message.includes('success') || message.includes('removed')
                   ? 'bg-green-900/50 text-green-300 border border-green-700'
                   : 'bg-red-900/50 text-red-300 border border-red-700'
               }`}
@@ -277,7 +372,7 @@ export default function UploadInstructionsModal({ onClose }: UploadInstructionsM
             className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-semibold py-4 rounded-xl transition-colors flex items-center justify-center gap-2 text-lg"
           >
             <Upload className="w-5 h-5" />
-            {uploading ? 'Uploading...' : 'Upload PDF'}
+            {uploading ? 'Uploading...' : existingPdf ? 'Replace PDF' : 'Upload PDF'}
           </button>
         </div>
       </div>
