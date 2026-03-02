@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, Home, CheckCircle, SkipForward, ChevronLeft, HelpCircle, MessageSquare, Droplets, XCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { fetchSkuForSerial } from '../lib/prerequisiteCheck';
 import { SkiRecord, MeasurementField } from '../types';
 import Summary from './Summary';
 import NumericKeypad from './NumericKeypad';
@@ -127,13 +128,24 @@ export default function DataEntryWorkflow({
     setTargetLoading(true);
     setTargetData({});
     try {
+      let sku = skiRecord.sku;
+      if (!sku) {
+        sku = await fetchSkuForSerial(skiRecord.serial_number);
+        if (sku) {
+          await supabase
+            .from('ski_records')
+            .update({ sku })
+            .eq('id', skiRecord.id);
+        }
+      }
+
       const response = await fetch(TARGET_WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           field: fieldName,
           serial_number: skiRecord.serial_number,
-          sku: skiRecord.sku,
+          sku,
           side: skiRecord.side,
         }),
       });
