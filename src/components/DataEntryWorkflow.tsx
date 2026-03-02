@@ -6,6 +6,9 @@ import { SkiRecord, MeasurementField } from '../types';
 import Summary from './Summary';
 import NumericKeypad from './NumericKeypad';
 import PDFViewerModal from './PDFViewerModal';
+import SkiInfoPage from './SkiInfoPage';
+
+const FINAL_QC_OPERATION = 'final_qc';
 
 const WAX_OIL_TRIGGER_FIELD = 'base_gap_finition';
 const TARGET_FETCH_FIELDS = ['camber_height_before', 'core_thickness', 'spatule_height'];
@@ -64,6 +67,7 @@ export default function DataEntryWorkflow({
   const [value, setValue] = useState('');
   const [loading, setLoading] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
+  const [showSkiInfo, setShowSkiInfo] = useState(false);
   const [isFail, setIsFail] = useState(false);
   const [showFailConfirm, setShowFailConfirm] = useState(false);
   const [showWaxOilPrompt, setShowWaxOilPrompt] = useState(false);
@@ -419,7 +423,13 @@ export default function DataEntryWorkflow({
         .in('id', ids);
 
       if (error) throw error;
-      onComplete();
+
+      if (operationName === FINAL_QC_OPERATION) {
+        setShowSummary(false);
+        setShowSkiInfo(true);
+      } else {
+        onComplete();
+      }
     } catch (error) {
       console.error('Error completing record:', error);
     }
@@ -433,6 +443,18 @@ export default function DataEntryWorkflow({
     if (currentFieldIndex > 0) {
       setCurrentFieldIndex(currentFieldIndex - 1);
     }
+  }
+
+  if (showSkiInfo) {
+    return (
+      <SkiInfoPage
+        serialNumber={skiRecord.serial_number}
+        side={skiRecord.side}
+        sku={resolvedSku}
+        onDone={onComplete}
+        onHome={onHome}
+      />
+    );
   }
 
   if (showSummary) {
