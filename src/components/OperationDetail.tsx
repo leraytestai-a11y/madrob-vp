@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Home, ScanLine, AlertCircle, HelpCircle, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Home, ScanLine, AlertCircle, HelpCircle, AlertTriangle, Ban } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Operation, MeasurementField, SkiRecord } from '../types';
 import DataEntryWorkflow from './DataEntryWorkflow';
@@ -24,6 +24,7 @@ export default function OperationDetail({ operation, onBack, onHome }: Operation
   const [instructionPdf, setInstructionPdf] = useState<{ file_url: string; file_name: string } | null>(null);
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [prerequisiteWarning, setPrerequisiteWarning] = useState<string | null>(null);
+  const [gradeCBlocked, setGradeCBlocked] = useState(false);
   const [pendingSide, setPendingSide] = useState<'left' | 'right' | null>(null);
   const [isPairPending, setIsPairPending] = useState(false);
 
@@ -73,6 +74,10 @@ export default function OperationDetail({ operation, onBack, onHome }: Operation
       setLoading(true);
       try {
         const result = await checkOperationPrerequisites(operation.name, serialNumber.trim(), 'left');
+        if (!result.ok && result.gradeCBlocked) {
+          setGradeCBlocked(true);
+          return;
+        }
         if (!result.ok && result.missingLabel) {
           setIsPairPending(true);
           setPendingSide(null);
@@ -92,6 +97,10 @@ export default function OperationDetail({ operation, onBack, onHome }: Operation
     setLoading(true);
     try {
       const result = await checkOperationPrerequisites(operation.name, serialNumber.trim(), selectedSide);
+      if (!result.ok && result.gradeCBlocked) {
+        setGradeCBlocked(true);
+        return;
+      }
       if (!result.ok && result.missingLabel) {
         setPendingSide(selectedSide);
         setIsPairPending(false);
@@ -253,7 +262,32 @@ export default function OperationDetail({ operation, onBack, onHome }: Operation
           </button>
         </div>
 
-        {prerequisiteWarning && (
+        {gradeCBlocked && (
+          <div className="bg-[#1a2942] border border-red-500/50 rounded-2xl p-8 mb-6">
+            <div className="flex justify-center mb-6">
+              <div className="bg-red-500/10 p-4 rounded-full">
+                <Ban className="w-12 h-12 text-red-400" />
+              </div>
+            </div>
+            <h2 className="text-2xl font-semibold text-white text-center mb-3">
+              Ski Blocked — Grade C
+            </h2>
+            <p className="text-slate-300 text-center mb-2">
+              This ski has been assigned <span className="font-bold text-red-400">Grade C</span> and cannot proceed to further operations.
+            </p>
+            <p className="text-slate-400 text-center text-sm mb-8">
+              Serial: {serialNumber}
+            </p>
+            <button
+              onClick={() => { setGradeCBlocked(false); setSerialNumber(''); }}
+              className="w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold py-4 rounded-xl transition-colors"
+            >
+              Go Back
+            </button>
+          </div>
+        )}
+
+        {!gradeCBlocked && prerequisiteWarning && (
           <div className="bg-[#1a2942] border border-amber-500/50 rounded-2xl p-8 mb-6">
             <div className="flex justify-center mb-6">
               <div className="bg-amber-500/10 p-4 rounded-full">
@@ -287,7 +321,7 @@ export default function OperationDetail({ operation, onBack, onHome }: Operation
           </div>
         )}
 
-        {!prerequisiteWarning && step === 'serial' && (
+        {!gradeCBlocked && !prerequisiteWarning && step === 'serial' && (
           <>
             {!selectedOperator ? (
               <div className="bg-[#1a2942] border border-orange-500/50 rounded-2xl p-8">
@@ -348,7 +382,7 @@ export default function OperationDetail({ operation, onBack, onHome }: Operation
           </>
         )}
 
-        {!prerequisiteWarning && step === 'side' && (
+        {!gradeCBlocked && !prerequisiteWarning && step === 'side' && (
           <div className="bg-[#1a2942] border border-slate-700/50 rounded-2xl p-8">
             <h2 className="text-2xl font-semibold text-white text-center mb-3">
               Select Side

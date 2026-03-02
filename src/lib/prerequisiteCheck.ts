@@ -4,6 +4,7 @@ const READ_WEBHOOK_URL =
 export interface PrerequisiteResult {
   ok: boolean;
   missingLabel?: string;
+  gradeCBlocked?: boolean;
 }
 
 type OperationPrerequisite = {
@@ -96,6 +97,10 @@ export async function checkOperationPrerequisites(
     data = Array.isArray(raw) ? (raw[0] as Record<string, unknown>) : raw;
   } catch {
     return { ok: true };
+  }
+
+  if (data['QC grade'] === 'C') {
+    return { ok: false, gradeCBlocked: true };
   }
 
   for (const key of prereq.required) {
