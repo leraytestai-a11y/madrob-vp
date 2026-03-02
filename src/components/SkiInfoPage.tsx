@@ -75,9 +75,9 @@ export default function SkiInfoPage({ serialNumber, side, sku, onDone, onHome }:
   const displaySerial = skiInfo?.serial_number || skiInfo?.serial || serialNumber;
   const displayTokenId = skiInfo?.token_id || skiInfo?.tokenID || skiInfo?.TokenID || skiInfo?.token || '—';
 
-  const drillingEntries = drillingInfo
-    ? Object.entries(drillingInfo).filter(([, v]) => v !== null && v !== undefined && v !== '')
-    : [];
+  const displayDrilling = drillingInfo
+    ? (drillingInfo.drilling_info || drillingInfo.drilling || drillingInfo.drill || Object.values(drillingInfo).find(v => v !== null && v !== undefined && v !== '') || null)
+    : null;
 
   return (
     <div className="min-h-screen bg-[#0a1628] p-6">
@@ -107,27 +107,15 @@ export default function SkiInfoPage({ serialNumber, side, sku, onDone, onHome }:
 
         {!loading && !error && (
           <>
-            <div className="bg-[#1a2942] border border-slate-700/50 rounded-2xl p-6 mb-4">
+            <div className="bg-[#1a2942] border border-slate-700/50 rounded-2xl p-6 mb-8">
               <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-4">Ski Details</p>
               <div className="space-y-3">
                 <InfoRow icon={<Tag className="w-4 h-4 text-blue-400" />} label="Brand" value={displayBrand} />
                 <InfoRow icon={<Hash className="w-4 h-4 text-emerald-400" />} label="SKU" value={displaySku} />
                 <InfoRow icon={<Hash className="w-4 h-4 text-slate-400" />} label="Serial Number" value={displaySerial} />
                 <InfoRow icon={<Cpu className="w-4 h-4 text-amber-400" />} label="Token ID" value={displayTokenId} />
+                <InfoRow label="Drilling Info" value={displayDrilling ? String(displayDrilling) : '—'} accent="text-orange-400" />
               </div>
-            </div>
-
-            <div className="bg-[#1a2942] border border-orange-500/30 rounded-2xl p-6 mb-8">
-              <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-4">Drilling Info</p>
-              {drillingEntries.length > 0 ? (
-                <div className="space-y-3">
-                  {drillingEntries.map(([key, val]) => (
-                    <InfoRow key={key} label={key.replace(/_/g, ' ')} value={String(val)} accent="text-orange-400" />
-                  ))}
-                </div>
-              ) : (
-                <p className="text-slate-500 text-sm text-center py-2">No drilling information available</p>
-              )}
             </div>
           </>
         )}
