@@ -5,7 +5,7 @@ import { Operation, MeasurementField, SkiRecord } from '../types';
 import DataEntryWorkflow from './DataEntryWorkflow';
 import { useOperator } from '../contexts/OperatorContext';
 import PDFViewerModal from './PDFViewerModal';
-import { checkOperationPrerequisites } from '../lib/prerequisiteCheck';
+import { checkOperationPrerequisites, fetchSkuForSerial } from '../lib/prerequisiteCheck';
 
 interface OperationDetailProps {
   operation: Operation;
@@ -91,6 +91,13 @@ export default function OperationDetail({ operation, onBack, onHome }: Operation
       }
       await createPairSkiRecords();
     } else {
+      setLoading(true);
+      try {
+        const fetchedSku = await fetchSkuForSerial(serialNumber.trim());
+        if (fetchedSku) setSku(fetchedSku);
+      } finally {
+        setLoading(false);
+      }
       setStep('side');
     }
   }

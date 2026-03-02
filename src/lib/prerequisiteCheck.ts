@@ -72,6 +72,22 @@ function isEmpty(val: unknown): boolean {
   return val === null || val === undefined || val === '';
 }
 
+export async function fetchSkuForSerial(serialNumber: string): Promise<string | null> {
+  try {
+    const response = await fetch(READ_WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ serial_number: serialNumber, side: 'left' }),
+    });
+    if (!response.ok) return null;
+    const raw = await response.json();
+    const data: Record<string, unknown> = Array.isArray(raw) ? (raw[0] as Record<string, unknown>) : raw;
+    return typeof data['SKU'] === 'string' ? data['SKU'] : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function checkOperationPrerequisites(
   operationName: string,
   serialNumber: string,
