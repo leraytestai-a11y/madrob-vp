@@ -53,12 +53,14 @@ export default function SkiInfoPage({ serialNumber, side, sku, onDone, onHome }:
 
       if (infoRes.ok) {
         const json = await infoRes.json();
+        console.log('[SkiInfoPage] skiInfo raw:', JSON.stringify(json));
         const row = Array.isArray(json) ? json[0] : json;
         setSkiInfo(row || {});
       }
 
       if (drillingRes.ok) {
         const json = await drillingRes.json();
+        console.log('[SkiInfoPage] drillingInfo raw:', JSON.stringify(json));
         const row = Array.isArray(json) ? json[0] : json;
         setDrillingInfo(row || {});
       }
