@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Home, ScanLine, AlertCircle, HelpCircle } from 'lucide-react';
+import { ArrowLeft, Home, ScanLine, AlertCircle, HelpCircle, AlertTriangle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Operation, MeasurementField, SkiRecord } from '../types';
 import DataEntryWorkflow from './DataEntryWorkflow';
 import { useOperator } from '../contexts/OperatorContext';
 import PDFViewerModal from './PDFViewerModal';
+import { checkOperationPrerequisites } from '../lib/prerequisiteCheck';
 
 interface OperationDetailProps {
   operation: Operation;
@@ -22,6 +23,9 @@ export default function OperationDetail({ operation, onBack, onHome }: Operation
   const [loading, setLoading] = useState(false);
   const [instructionPdf, setInstructionPdf] = useState<{ file_url: string; file_name: string } | null>(null);
   const [showPdfModal, setShowPdfModal] = useState(false);
+  const [prerequisiteWarning, setPrerequisiteWarning] = useState<string | null>(null);
+  const [pendingSide, setPendingSide] = useState<'left' | 'right' | null>(null);
+  const [isPairPending, setIsPairPending] = useState(false);
 
   useEffect(() => {
     loadFields();
@@ -64,7 +68,20 @@ export default function OperationDetail({ operation, onBack, onHome }: Operation
   async function handleSerialSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!serialNumber.trim()) return;
+
     if (isPairOperation) {
+      setLoading(true);
+      try {
+        const result = await checkOperationPrerequisites(operation.name, serialNumber.trim(), 'left');
+        if (!result.ok && result.missingLabel) {
+          setIsPairPending(true);
+          setPendingSide(null);
+          setPrerequisiteWarning(result.missingLabel);
+          return;
+        }
+      } finally {
+        setLoading(false);
+      }
       await createPairSkiRecords();
     } else {
       setStep('side');
@@ -72,7 +89,41 @@ export default function OperationDetail({ operation, onBack, onHome }: Operation
   }
 
   async function handleSideSelect(selectedSide: 'left' | 'right') {
+    setLoading(true);
+    try {
+      const result = await checkOperationPrerequisites(operation.name, serialNumber.trim(), selectedSide);
+      if (!result.ok && result.missingLabel) {
+        setPendingSide(selectedSide);
+        setIsPairPending(false);
+        setPrerequisiteWarning(result.missingLabel);
+        return;
+      }
+    } finally {
+      setLoading(false);
+    }
+
     await createSkiRecord(selectedSide);
+  }
+
+  function handleWarningSkip() {
+    const side = pendingSide;
+    const pair = isPairPending;
+    setPrerequisiteWarning(null);
+    setPendingSide(null);
+    setIsPairPending(false);
+    if (pair) {
+      createPairSkiRecords();
+    } else if (side) {
+      createSkiRecord(side);
+    } else {
+      setStep('side');
+    }
+  }
+
+  function handleWarningBack() {
+    setPrerequisiteWarning(null);
+    setPendingSide(null);
+    setIsPairPending(false);
   }
 
   async function createPairSkiRecords() {
@@ -202,7 +253,41 @@ export default function OperationDetail({ operation, onBack, onHome }: Operation
           </button>
         </div>
 
-        {step === 'serial' && (
+        {prerequisiteWarning && (
+          <div className="bg-[#1a2942] border border-amber-500/50 rounded-2xl p-8 mb-6">
+            <div className="flex justify-center mb-6">
+              <div className="bg-amber-500/10 p-4 rounded-full">
+                <AlertTriangle className="w-12 h-12 text-amber-400" />
+              </div>
+            </div>
+            <h2 className="text-2xl font-semibold text-white text-center mb-3">
+              Operation Not Completed
+            </h2>
+            <p className="text-slate-300 text-center mb-2">
+              <span className="font-semibold text-amber-300">{prerequisiteWarning}</span> has not been
+              completed for this ski.
+            </p>
+            <p className="text-slate-400 text-center text-sm mb-8">
+              Serial: {serialNumber}
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                onClick={handleWarningBack}
+                className="bg-slate-700 hover:bg-slate-600 text-white font-semibold py-4 rounded-xl transition-colors"
+              >
+                Go Back
+              </button>
+              <button
+                onClick={handleWarningSkip}
+                className="bg-amber-600 hover:bg-amber-700 text-white font-semibold py-4 rounded-xl transition-colors"
+              >
+                Skip & Continue
+              </button>
+            </div>
+          </div>
+        )}
+
+        {!prerequisiteWarning && step === 'serial' && (
           <>
             {!selectedOperator ? (
               <div className="bg-[#1a2942] border border-orange-500/50 rounded-2xl p-8">
@@ -246,9 +331,16 @@ export default function OperationDetail({ operation, onBack, onHome }: Operation
                   <button
                     type="submit"
                     disabled={!serialNumber.trim() || loading}
-                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-semibold py-4 rounded-xl transition-colors text-lg"
+                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-semibold py-4 rounded-xl transition-colors text-lg flex items-center justify-center gap-2"
                   >
-                    Continue
+                    {loading ? (
+                      <>
+                        <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Checking...
+                      </>
+                    ) : (
+                      'Continue'
+                    )}
                   </button>
                 </form>
               </div>
@@ -256,7 +348,7 @@ export default function OperationDetail({ operation, onBack, onHome }: Operation
           </>
         )}
 
-        {step === 'side' && (
+        {!prerequisiteWarning && step === 'side' && (
           <div className="bg-[#1a2942] border border-slate-700/50 rounded-2xl p-8">
             <h2 className="text-2xl font-semibold text-white text-center mb-3">
               Select Side
@@ -278,6 +370,12 @@ export default function OperationDetail({ operation, onBack, onHome }: Operation
                 RIGHT
               </button>
             </div>
+            {loading && (
+              <div className="flex items-center justify-center gap-2 mt-6 text-slate-400">
+                <span className="w-4 h-4 border-2 border-slate-400/30 border-t-slate-400 rounded-full animate-spin" />
+                <span className="text-sm">Checking prerequisites...</span>
+              </div>
+            )}
           </div>
         )}
       </div>
