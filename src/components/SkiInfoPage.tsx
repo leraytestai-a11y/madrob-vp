@@ -80,13 +80,13 @@ export default function SkiInfoPage({ serialNumber, side, sku, onDone, onHome }:
     }
   }
 
-  const displayBrand = skiInfo?.brand || skiInfo?.Brand || '—';
+  const displayBrand = skiInfo?.brand || skiInfo?.Brand || skiInfo?.['Client/Brand'] || drillingInfo?.Brand || drillingInfo?.brand || '—';
   const displaySku = skiInfo?.sku || skiInfo?.SKU || sku || '—';
-  const displaySerial = skiInfo?.serial_number || skiInfo?.serial || serialNumber;
-  const displayTokenId = skiInfo?.token_id || skiInfo?.tokenID || skiInfo?.TokenID || skiInfo?.token || '—';
+  const displaySerial = skiInfo?.serial_number || skiInfo?.['Serial number'] || skiInfo?.serial || serialNumber;
+  const displayTokenId = skiInfo?.token_id || skiInfo?.['Token ID'] || skiInfo?.tokenID || skiInfo?.TokenID || skiInfo?.token || '—';
 
   const displayDrilling = drillingInfo
-    ? (drillingInfo.drilling_info || drillingInfo.drilling || drillingInfo.drill || Object.values(drillingInfo).find(v => v !== null && v !== undefined && v !== '') || null)
+    ? (drillingInfo.drilling_info || drillingInfo['drilling info'] || drillingInfo.drilling || drillingInfo.drill || null)
     : null;
 
   return (
