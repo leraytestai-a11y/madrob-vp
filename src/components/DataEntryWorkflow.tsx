@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { ArrowLeft, Home, CheckCircle, SkipForward, ChevronLeft, HelpCircle, MessageSquare, Droplets, XCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { fetchSkuForSerial } from '../lib/prerequisiteCheck';
@@ -85,33 +85,8 @@ export default function DataEntryWorkflow({
 
   const currentField = visibleFields[currentFieldIndex];
   const progress = visibleFields.length > 0 ? ((currentFieldIndex + 1) / visibleFields.length) * 100 : 0;
-
-  useEffect(() => {
-    loadExistingMeasurements();
-    loadGlobalComment();
-  }, [skiRecord.id, skiRecord.serial_number, skiRecord.side]);
-
-  useEffect(() => {
-    updateVisibleFields();
-  }, [fields, existingMeasurements]);
-
-  useEffect(() => {
-    if (currentField) {
-      const existing = existingMeasurements.get(currentField.id);
-      if (existing) {
-        setValue(existing.value || '');
-      } else {
-        setValue('');
-      }
-      loadInstructionPdf(currentField.id);
-
-      if (TARGET_FETCH_FIELDS.includes(currentField.name)) {
-        fetchTargets(currentField.name);
-      } else {
-        setTargetData({});
-      }
-    }
-  }, [currentFieldIndex, existingMeasurements, currentField]);
+  const currentFieldId = currentField?.id;
+  const currentFieldName = currentField?.name;
 
   async function loadInstructionPdf(fieldId: string) {
     try {
@@ -186,16 +161,11 @@ export default function DataEntryWorkflow({
     return allowedValues.includes(dependentMeasurement.value);
   }
 
-  function updateVisibleFields() {
-    const visible = fields.filter(field => isFieldVisible(field, existingMeasurements));
-    setVisibleFields(visible);
-  }
-
   function computeVisibleFields(measurementsMap: Map<string, any>): MeasurementField[] {
     return fields.filter(field => isFieldVisible(field, measurementsMap));
   }
 
-  async function loadExistingMeasurements(): Promise<Map<string, any>> {
+  const loadExistingMeasurements = useCallback(async (): Promise<Map<string, any>> => {
     try {
       const { data, error } = await supabase
         .from('measurements')
@@ -206,13 +176,23 @@ export default function DataEntryWorkflow({
 
       const map = new Map();
       data?.forEach(m => map.set(m.field_id, m));
-      setExistingMeasurements(map);
+      setExistingMeasurements(prev => {
+        if (prev.size === map.size) {
+          let same = true;
+          for (const [k, v] of map) {
+            const p = prev.get(k);
+            if (!p || p.value !== v.value || p.skipped !== v.skipped) { same = false; break; }
+          }
+          if (same) return prev;
+        }
+        return map;
+      });
       return map;
     } catch (error) {
       console.error('Error loading measurements:', error);
       return existingMeasurements;
     }
-  }
+  }, [skiRecord.id]);
 
   async function loadGlobalComment() {
     setCommentLoading(true);
@@ -237,6 +217,33 @@ export default function DataEntryWorkflow({
       setCommentLoading(false);
     }
   }
+
+  useEffect(() => {
+    loadExistingMeasurements();
+    loadGlobalComment();
+  }, [loadExistingMeasurements]);
+
+  useEffect(() => {
+    const visible = fields.filter(field => isFieldVisible(field, existingMeasurements));
+    setVisibleFields(prev => {
+      const prevIds = prev.map(f => f.id).join(',');
+      const nextIds = visible.map(f => f.id).join(',');
+      return prevIds === nextIds ? prev : visible;
+    });
+  }, [fields, existingMeasurements]);
+
+  useEffect(() => {
+    if (!currentField) return;
+    const existing = existingMeasurements.get(currentField.id);
+    setValue(existing?.value || '');
+    loadInstructionPdf(currentField.id);
+
+    if (TARGET_FETCH_FIELDS.includes(currentField.name)) {
+      fetchTargets(currentField.name);
+    } else {
+      setTargetData({});
+    }
+  }, [currentFieldIndex, currentFieldId, currentFieldName]);
 
   function handleCommentChange(text: string) {
     setComment(text);
