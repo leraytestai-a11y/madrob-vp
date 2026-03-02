@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Home, ArrowLeft, Loader2, AlertCircle, Tag, Hash, Cpu } from 'lucide-react';
 
-const BRAND_SKU_TOKEN_WEBHOOK = 'https://n8n.srv833470.hstgr.cloud/webhook/720b5deb-c1f3-4ad6-9c1c-9388981e4a19';
+const BRAND_SKU_TOKEN_WEBHOOK = 'https://n8n.srv833470.hstgr.cloud/webhook-test/720b5deb-c1f3-4ad6-9c1c-9388981e4a19';
 const DRILLING_WEBHOOK = 'https://n8n.srv833470.hstgr.cloud/webhook-test/7b974084-7f71-4e6e-9c2a-50ed88d1db6c';
 
 interface SkiInfoPageProps {
