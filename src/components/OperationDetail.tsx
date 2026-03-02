@@ -75,7 +75,8 @@ export default function OperationDetail({ operation, onBack, onHome }: Operation
       setLoading(true);
       try {
         const result = await checkOperationPrerequisites(operation.name, serialNumber.trim(), 'left');
-        if (result.sku) setSku(result.sku);
+        const resolvedSku = result.sku ?? null;
+        setSku(resolvedSku);
         if (!result.ok && result.gradeCBlocked) {
           setGradeCBlocked(true);
           return;
@@ -86,15 +87,15 @@ export default function OperationDetail({ operation, onBack, onHome }: Operation
           setPrerequisiteWarning(result.missingLabel);
           return;
         }
+        await createPairSkiRecords(resolvedSku);
       } finally {
         setLoading(false);
       }
-      await createPairSkiRecords();
     } else {
       setLoading(true);
       try {
         const fetchedSku = await fetchSkuForSerial(serialNumber.trim());
-        if (fetchedSku) setSku(fetchedSku);
+        setSku(fetchedSku);
       } finally {
         setLoading(false);
       }
@@ -106,7 +107,8 @@ export default function OperationDetail({ operation, onBack, onHome }: Operation
     setLoading(true);
     try {
       const result = await checkOperationPrerequisites(operation.name, serialNumber.trim(), selectedSide);
-      if (result.sku) setSku(result.sku);
+      const resolvedSku = result.sku ?? null;
+      setSku(resolvedSku);
       if (!result.ok && result.gradeCBlocked) {
         setGradeCBlocked(true);
         return;
@@ -117,11 +119,10 @@ export default function OperationDetail({ operation, onBack, onHome }: Operation
         setPrerequisiteWarning(result.missingLabel);
         return;
       }
+      await createSkiRecord(selectedSide, resolvedSku);
     } finally {
       setLoading(false);
     }
-
-    await createSkiRecord(selectedSide);
   }
 
   function handleWarningSkip() {
@@ -131,9 +132,9 @@ export default function OperationDetail({ operation, onBack, onHome }: Operation
     setPendingSide(null);
     setIsPairPending(false);
     if (pair) {
-      createPairSkiRecords();
+      createPairSkiRecords(sku);
     } else if (side) {
-      createSkiRecord(side);
+      createSkiRecord(side, sku);
     } else {
       setStep('side');
     }
@@ -145,7 +146,7 @@ export default function OperationDetail({ operation, onBack, onHome }: Operation
     setIsPairPending(false);
   }
 
-  async function createPairSkiRecords() {
+  async function createPairSkiRecords(resolvedSku: string | null = sku) {
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -155,7 +156,7 @@ export default function OperationDetail({ operation, onBack, onHome }: Operation
         .insert([
           {
             serial_number: serialNumber,
-            sku: sku,
+            sku: resolvedSku,
             side: 'left',
             operation_id: operation.id,
             created_by: user?.id || null,
@@ -164,7 +165,7 @@ export default function OperationDetail({ operation, onBack, onHome }: Operation
           },
           {
             serial_number: serialNumber,
-            sku: sku,
+            sku: resolvedSku,
             side: 'right',
             operation_id: operation.id,
             created_by: user?.id || null,
@@ -187,7 +188,7 @@ export default function OperationDetail({ operation, onBack, onHome }: Operation
     }
   }
 
-  async function createSkiRecord(selectedSide: 'left' | 'right' | null) {
+  async function createSkiRecord(selectedSide: 'left' | 'right' | null, resolvedSku: string | null = sku) {
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -196,7 +197,7 @@ export default function OperationDetail({ operation, onBack, onHome }: Operation
         .from('ski_records')
         .insert({
           serial_number: serialNumber,
-          sku: sku,
+          sku: resolvedSku,
           side: selectedSide as string,
           operation_id: operation.id,
           created_by: user?.id || null,
