@@ -5,6 +5,7 @@ export interface PrerequisiteResult {
   ok: boolean;
   missingLabel?: string;
   gradeCBlocked?: boolean;
+  sku?: string | null;
 }
 
 type OperationPrerequisite = {
@@ -99,23 +100,25 @@ export async function checkOperationPrerequisites(
     return { ok: true };
   }
 
+  const sku = typeof data['SKU'] === 'string' ? data['SKU'] : null;
+
   if (data['QC grade'] === 'C') {
-    return { ok: false, gradeCBlocked: true };
+    return { ok: false, gradeCBlocked: true, sku };
   }
 
   for (const key of prereq.required) {
     if (isEmpty(data[key])) {
       const label = TIMESTAMP_LABELS[key] ?? key;
-      return { ok: false, missingLabel: label };
+      return { ok: false, missingLabel: label, sku };
     }
   }
 
   if (prereq.conditionalKey) {
     const condKeyPresent = prereq.conditionalKey in data;
     if (condKeyPresent && isEmpty(data[prereq.conditionalKey])) {
-      return { ok: false, missingLabel: prereq.conditionalLabel ?? prereq.conditionalKey };
+      return { ok: false, missingLabel: prereq.conditionalLabel ?? prereq.conditionalKey, sku };
     }
   }
 
-  return { ok: true };
+  return { ok: true, sku };
 }

@@ -27,6 +27,7 @@ export default function OperationDetail({ operation, onBack, onHome }: Operation
   const [gradeCBlocked, setGradeCBlocked] = useState(false);
   const [pendingSide, setPendingSide] = useState<'left' | 'right' | null>(null);
   const [isPairPending, setIsPairPending] = useState(false);
+  const [sku, setSku] = useState<string | null>(null);
 
   useEffect(() => {
     loadFields();
@@ -74,6 +75,7 @@ export default function OperationDetail({ operation, onBack, onHome }: Operation
       setLoading(true);
       try {
         const result = await checkOperationPrerequisites(operation.name, serialNumber.trim(), 'left');
+        if (result.sku) setSku(result.sku);
         if (!result.ok && result.gradeCBlocked) {
           setGradeCBlocked(true);
           return;
@@ -97,6 +99,7 @@ export default function OperationDetail({ operation, onBack, onHome }: Operation
     setLoading(true);
     try {
       const result = await checkOperationPrerequisites(operation.name, serialNumber.trim(), selectedSide);
+      if (result.sku) setSku(result.sku);
       if (!result.ok && result.gradeCBlocked) {
         setGradeCBlocked(true);
         return;
@@ -145,7 +148,7 @@ export default function OperationDetail({ operation, onBack, onHome }: Operation
         .insert([
           {
             serial_number: serialNumber,
-            sku: null,
+            sku: sku,
             side: 'left',
             operation_id: operation.id,
             created_by: user?.id || null,
@@ -154,7 +157,7 @@ export default function OperationDetail({ operation, onBack, onHome }: Operation
           },
           {
             serial_number: serialNumber,
-            sku: null,
+            sku: sku,
             side: 'right',
             operation_id: operation.id,
             created_by: user?.id || null,
@@ -186,7 +189,7 @@ export default function OperationDetail({ operation, onBack, onHome }: Operation
         .from('ski_records')
         .insert({
           serial_number: serialNumber,
-          sku: null,
+          sku: sku,
           side: selectedSide as string,
           operation_id: operation.id,
           created_by: user?.id || null,
@@ -210,6 +213,7 @@ export default function OperationDetail({ operation, onBack, onHome }: Operation
     setSerialNumber('');
     setSkiRecord(null);
     setPairedSkiRecord(null);
+    setSku(null);
     setStep('serial');
   }
 
