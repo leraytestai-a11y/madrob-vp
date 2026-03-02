@@ -79,9 +79,6 @@ export default function SkiInfoPage({ serialNumber, side, sku, onDone, onHome }:
     ? Object.entries(drillingInfo).filter(([, v]) => v !== null && v !== undefined && v !== '')
     : [];
 
-  const primaryDrillingValue = drillingEntries.length > 0 ? String(drillingEntries[0][1]) : null;
-  const secondaryDrillingEntries = drillingEntries.slice(1);
-
   return (
     <div className="min-h-screen bg-[#0a1628] p-6">
       <div className="max-w-2xl mx-auto">
@@ -110,43 +107,27 @@ export default function SkiInfoPage({ serialNumber, side, sku, onDone, onHome }:
 
         {!loading && !error && (
           <>
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <HeroCard
-                label="Brand"
-                value={displayBrand}
-                accent="text-blue-400"
-                borderColor="border-blue-500/30"
-              />
-              <HeroCard
-                label="Drilling"
-                value={primaryDrillingValue ?? '—'}
-                accent="text-orange-400"
-                borderColor="border-orange-500/30"
-              />
+            <div className="bg-[#1a2942] border border-slate-700/50 rounded-2xl p-6 mb-4">
+              <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-4">Ski Details</p>
+              <div className="space-y-3">
+                <InfoRow icon={<Tag className="w-4 h-4 text-blue-400" />} label="Brand" value={displayBrand} />
+                <InfoRow icon={<Hash className="w-4 h-4 text-emerald-400" />} label="SKU" value={displaySku} />
+                <InfoRow icon={<Hash className="w-4 h-4 text-slate-400" />} label="Serial Number" value={displaySerial} />
+                <InfoRow icon={<Cpu className="w-4 h-4 text-amber-400" />} label="Token ID" value={displayTokenId} />
+              </div>
             </div>
 
-            {secondaryDrillingEntries.length > 0 && (
-              <div className="bg-[#1a2942] border border-slate-700/50 rounded-2xl p-5 mb-4">
-                <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">Additional Drilling Info</p>
-                <div className="space-y-2">
-                  {secondaryDrillingEntries.map(([key, val]) => (
-                    <div key={key} className="flex items-center justify-between bg-[#0a1628] rounded-xl px-4 py-3">
-                      <span className="text-slate-400 text-sm capitalize">{key.replace(/_/g, ' ')}</span>
-                      <span className="text-white font-semibold text-sm">{String(val)}</span>
-                    </div>
+            <div className="bg-[#1a2942] border border-orange-500/30 rounded-2xl p-6 mb-8">
+              <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-4">Drilling Info</p>
+              {drillingEntries.length > 0 ? (
+                <div className="space-y-3">
+                  {drillingEntries.map(([key, val]) => (
+                    <InfoRow key={key} label={key.replace(/_/g, ' ')} value={String(val)} accent="text-orange-400" />
                   ))}
                 </div>
-              </div>
-            )}
-
-            <div className="bg-[#1a2942] border border-slate-700/50 rounded-2xl p-5 mb-8">
-              <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-4">Ski Details</p>
-              <div className="grid grid-cols-2 gap-3">
-                <InfoCard icon={<Hash className="w-4 h-4 text-emerald-400" />} label="SKU" value={displaySku} />
-                <InfoCard icon={<Hash className="w-4 h-4 text-slate-400" />} label="Serial" value={displaySerial} />
-                <InfoCard icon={<Cpu className="w-4 h-4 text-amber-400" />} label="Token ID" value={displayTokenId} />
-                <InfoCard icon={<Tag className="w-4 h-4 text-blue-400" />} label="Side" value={side.toUpperCase()} />
-              </div>
+              ) : (
+                <p className="text-slate-500 text-sm text-center py-2">No drilling information available</p>
+              )}
             </div>
           </>
         )}
@@ -162,23 +143,14 @@ export default function SkiInfoPage({ serialNumber, side, sku, onDone, onHome }:
   );
 }
 
-function HeroCard({ label, value, accent, borderColor }: { label: string; value: string; accent: string; borderColor: string }) {
+function InfoRow({ icon, label, value, accent = 'text-white' }: { icon?: React.ReactNode; label: string; value: string; accent?: string }) {
   return (
-    <div className={`bg-[#1a2942] border ${borderColor} rounded-2xl p-6 flex flex-col items-center justify-center text-center`}>
-      <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">{label}</span>
-      <span className={`${accent} font-bold text-4xl leading-tight break-all`}>{value}</span>
-    </div>
-  );
-}
-
-function InfoCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
-  return (
-    <div className="bg-[#0a1628] rounded-xl p-4">
-      <div className="flex items-center gap-2 mb-1">
+    <div className="flex items-center justify-between bg-[#0a1628] rounded-xl px-4 py-3">
+      <div className="flex items-center gap-2">
         {icon}
-        <span className="text-slate-400 text-xs uppercase tracking-wider">{label}</span>
+        <span className="text-slate-400 text-sm capitalize">{label}</span>
       </div>
-      <p className="text-white font-bold text-base break-all">{value}</p>
+      <span className={`${accent} font-semibold text-sm text-right break-all max-w-[55%]`}>{value}</span>
     </div>
   );
 }
