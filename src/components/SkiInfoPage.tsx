@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Home, ArrowLeft, Loader2, AlertCircle, Tag, Hash, Cpu } from 'lucide-react';
+import { Home, ArrowLeft, Loader2, AlertCircle, Tag, Hash, Cpu, Wifi, CheckCircle, RefreshCw } from 'lucide-react';
 
 const BRAND_SKU_TOKEN_WEBHOOK = 'https://n8n.srv833470.hstgr.cloud/webhook/720b5deb-c1f3-4ad6-9c1c-9388981e4a19';
 const DRILLING_WEBHOOK = 'https://n8n.srv833470.hstgr.cloud/webhook/7b974084-7f71-4e6e-9c2a-50ed88d1db6c';
+const NFC_TAG_WEBHOOK = 'https://n8n.srv833470.hstgr.cloud/webhook/nfc-tag-encoded';
+const NFC_ENDPOINTS = ['https://127.0.0.1:3001', 'http://127.0.0.1:3001'];
+const NFC_BASE_URL = 'https://www.madrob-nfc.com/ski/';
 
 interface SkiInfoPageProps {
   serialNumber: string;
@@ -29,6 +32,8 @@ export default function SkiInfoPage({ serialNumber, side, sku, onDone, onHome }:
   const [drillingInfo, setDrillingInfo] = useState<DrillingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [nfcStatus, setNfcStatus] = useState<'idle' | 'writing' | 'success' | 'error'>('idle');
+  const [nfcError, setNfcError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -89,6 +94,43 @@ export default function SkiInfoPage({ serialNumber, side, sku, onDone, onHome }:
     ? (drillingInfo.drilling_info || drillingInfo['drilling info'] || drillingInfo.drilling || drillingInfo.drill || null)
     : null;
 
+  async function handleEncodeNfc() {
+    if (displayTokenId === '—') return;
+    setNfcStatus('writing');
+    setNfcError(null);
+
+    const urlToWrite = `${NFC_BASE_URL}${displayTokenId}`;
+    let lastErr: Error = new Error('Service NFC non disponible. Lance NFC Service sur la tablette.');
+
+    for (const base of NFC_ENDPOINTS) {
+      try {
+        const res = await fetch(`${base}/write-nfc`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: urlToWrite }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (data.success) {
+          setNfcStatus('success');
+          Promise.allSettled([
+            fetch(NFC_TAG_WEBHOOK, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 'tag nfc': 'ok', token_id: displayTokenId, serial_number: displaySerial }),
+            }),
+          ]).catch(() => {});
+          return;
+        }
+        lastErr = new Error(data.error || 'Echec ecriture NFC');
+      } catch (e) {
+        lastErr = e instanceof Error ? e : new Error('Service NFC non disponible. Lance NFC Service sur la tablette.');
+      }
+    }
+
+    setNfcStatus('error');
+    setNfcError(lastErr.message);
+  }
+
   return (
     <div className="min-h-screen bg-[#0a1628] p-6">
       <div className="max-w-2xl mx-auto">
@@ -117,7 +159,7 @@ export default function SkiInfoPage({ serialNumber, side, sku, onDone, onHome }:
 
         {!loading && !error && (
           <>
-            <div className="bg-[#1a2942] border border-slate-700/50 rounded-2xl p-6 mb-8">
+            <div className="bg-[#1a2942] border border-slate-700/50 rounded-2xl p-6 mb-6">
               <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-4">Ski Details</p>
               <div className="space-y-3">
                 <InfoRow icon={<Tag className="w-4 h-4 text-blue-400" />} label="Brand" value={displayBrand} />
@@ -127,12 +169,61 @@ export default function SkiInfoPage({ serialNumber, side, sku, onDone, onHome }:
                 <InfoRow label="Drilling Info" value={displayDrilling ? String(displayDrilling) : '—'} accent="text-orange-400" />
               </div>
             </div>
+
+            <button
+              onClick={handleEncodeNfc}
+              disabled={displayTokenId === '—' || nfcStatus === 'writing' || nfcStatus === 'success'}
+              className={`w-full flex items-center justify-center gap-3 font-semibold py-4 rounded-xl transition-colors text-base mb-3
+                ${nfcStatus === 'success'
+                  ? 'bg-emerald-700 text-emerald-100 cursor-default'
+                  : nfcStatus === 'error'
+                  ? 'bg-red-600 hover:bg-red-700 text-white'
+                  : nfcStatus === 'writing'
+                  ? 'bg-blue-800 text-blue-200 cursor-not-allowed'
+                  : displayTokenId === '—'
+                  ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                  : 'bg-blue-600 hover:bg-blue-700 text-white'
+                }`}
+            >
+              {nfcStatus === 'writing' && <Loader2 className="w-5 h-5 animate-spin" />}
+              {nfcStatus === 'success' && <CheckCircle className="w-5 h-5" />}
+              {nfcStatus === 'error' && <RefreshCw className="w-5 h-5" />}
+              {nfcStatus === 'idle' && <Wifi className="w-5 h-5" />}
+              {nfcStatus === 'idle' && 'Encoder le tag NFC'}
+              {nfcStatus === 'writing' && 'Ecriture en cours...'}
+              {nfcStatus === 'success' && 'Tag encode'}
+              {nfcStatus === 'error' && 'Reessayer'}
+            </button>
+
+            {nfcStatus === 'writing' && (
+              <div className="bg-blue-900/30 border border-blue-500/40 rounded-xl px-4 py-3 mb-4 flex items-center gap-3">
+                <Loader2 className="w-4 h-4 text-blue-400 animate-spin flex-shrink-0" />
+                <p className="text-blue-300 text-sm">Approche le tag du lecteur ACR1552...</p>
+              </div>
+            )}
+
+            {nfcStatus === 'success' && (
+              <div className="bg-emerald-900/30 border border-emerald-500/40 rounded-xl px-4 py-3 mb-4 flex items-start gap-3">
+                <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-emerald-300 text-sm font-semibold">Tag encode avec succes</p>
+                  <p className="text-emerald-400/70 text-xs mt-0.5 break-all">{NFC_BASE_URL}{displayTokenId}</p>
+                </div>
+              </div>
+            )}
+
+            {nfcStatus === 'error' && nfcError && (
+              <div className="bg-red-900/30 border border-red-500/40 rounded-xl px-4 py-3 mb-4 flex items-start gap-3">
+                <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                <p className="text-red-300 text-sm">{nfcError}</p>
+              </div>
+            )}
           </>
         )}
 
         <button
           onClick={onDone}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-xl transition-colors text-lg"
+          className="w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold py-4 rounded-xl transition-colors text-lg"
         >
           Done
         </button>
