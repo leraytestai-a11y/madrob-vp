@@ -7,6 +7,38 @@ import NumericKeypad from './NumericKeypad';
 import PDFViewerModal from './PDFViewerModal';
 
 const WAX_OIL_TRIGGER_FIELD = 'base_gap_finition';
+const TARGET_FETCH_FIELDS = ['camber_height_before', 'core_thickness', 'spatule_height'];
+const TARGET_WEBHOOK_URL = 'https://n8n.srv833470.hstgr.cloud/webhook-test/7b974084-7f71-4e6e-9c2a-50ed88d1db6c';
+
+interface TargetData {
+  'final camber min'?: number;
+  'final camber max'?: number;
+  'final nose min'?: number;
+  'final nose max'?: number;
+  'core thickness target'?: number;
+}
+
+function getTargetDisplay(fieldName: string, targets: TargetData): string | null {
+  if (fieldName === 'camber_height_before' || fieldName === 'camber_height') {
+    const min = targets['final camber min'];
+    const max = targets['final camber max'];
+    if (min != null && max != null) return `Target: ${min} – ${max} mm`;
+    if (min != null) return `Target: ≥ ${min} mm`;
+    if (max != null) return `Target: ≤ ${max} mm`;
+  }
+  if (fieldName === 'spatule_height') {
+    const min = targets['final nose min'];
+    const max = targets['final nose max'];
+    if (min != null && max != null) return `Target: ${min} – ${max} mm`;
+    if (min != null) return `Target: ≥ ${min} mm`;
+    if (max != null) return `Target: ≤ ${max} mm`;
+  }
+  if (fieldName === 'core_thickness') {
+    const target = targets['core thickness target'];
+    if (target != null) return `Target: ${target} mm`;
+  }
+  return null;
+}
 
 interface DataEntryWorkflowProps {
   skiRecord: SkiRecord;
@@ -41,6 +73,8 @@ export default function DataEntryWorkflow({
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [comment, setComment] = useState('');
   const [commentLoading, setCommentLoading] = useState(false);
+  const [targetData, setTargetData] = useState<TargetData>({});
+  const [targetLoading, setTargetLoading] = useState(false);
   const commentSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const currentField = visibleFields[currentFieldIndex];
@@ -64,6 +98,12 @@ export default function DataEntryWorkflow({
         setValue('');
       }
       loadInstructionPdf(currentField.id);
+
+      if (TARGET_FETCH_FIELDS.includes(currentField.name)) {
+        fetchTargets(currentField.name);
+      } else {
+        setTargetData({});
+      }
     }
   }, [currentFieldIndex, existingMeasurements, currentField]);
 
@@ -80,6 +120,32 @@ export default function DataEntryWorkflow({
     } catch (error) {
       console.error('Error loading instruction PDF:', error);
       setInstructionPdf(null);
+    }
+  }
+
+  async function fetchTargets(fieldName: string) {
+    setTargetLoading(true);
+    setTargetData({});
+    try {
+      const response = await fetch(TARGET_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          field: fieldName,
+          serial_number: skiRecord.serial_number,
+          sku: skiRecord.sku,
+          side: skiRecord.side,
+        }),
+      });
+      if (response.ok) {
+        const json = await response.json();
+        const row = Array.isArray(json) ? json[0] : json;
+        if (row) setTargetData(row as TargetData);
+      }
+    } catch (error) {
+      console.error('[fetchTargets] Error:', error);
+    } finally {
+      setTargetLoading(false);
     }
   }
 
@@ -542,7 +608,21 @@ export default function DataEntryWorkflow({
             </button>
           </div>
           {currentField.unit && (
-            <p className="text-slate-400 text-center mb-8">Unit: {currentField.unit}</p>
+            <p className="text-slate-400 text-center mb-2">Unit: {currentField.unit}</p>
+          )}
+
+          {TARGET_FETCH_FIELDS.includes(currentField.name) && (
+            <div className="flex justify-center mb-8">
+              {targetLoading ? (
+                <span className="text-slate-500 text-sm">Loading target...</span>
+              ) : getTargetDisplay(currentField.name, targetData) ? (
+                <span className="bg-blue-900/40 border border-blue-700/50 text-blue-300 text-base font-semibold px-5 py-2 rounded-xl">
+                  {getTargetDisplay(currentField.name, targetData)}
+                </span>
+              ) : (
+                <span className="text-slate-600 text-sm">No target available</span>
+              )}
+            </div>
           )}
 
           {currentField.field_type === 'numeric' && (
