@@ -76,6 +76,7 @@ export default function DataEntryWorkflow({
   const [commentLoading, setCommentLoading] = useState(false);
   const [targetData, setTargetData] = useState<TargetData>({});
   const [targetLoading, setTargetLoading] = useState(false);
+  const [resolvedSku, setResolvedSku] = useState<string | null>(skiRecord.sku);
   const commentSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const currentField = visibleFields[currentFieldIndex];
@@ -128,10 +129,11 @@ export default function DataEntryWorkflow({
     setTargetLoading(true);
     setTargetData({});
     try {
-      let sku = skiRecord.sku;
+      let sku = resolvedSku;
       if (!sku) {
         sku = await fetchSkuForSerial(skiRecord.serial_number);
         if (sku) {
+          setResolvedSku(sku);
           await supabase
             .from('ski_records')
             .update({ sku })
@@ -568,10 +570,10 @@ export default function DataEntryWorkflow({
         <div className="mb-8">
           <div className="bg-[#1a2942] border border-slate-700/50 rounded-xl px-6 py-4 mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div className="flex flex-wrap gap-x-6 gap-y-1">
-              {skiRecord.sku && (
+              {resolvedSku && (
                 <div>
                   <span className="text-slate-500 text-sm uppercase tracking-wider">SKU</span>
-                  <p className="text-white text-2xl font-bold">{skiRecord.sku}</p>
+                  <p className="text-white text-2xl font-bold">{resolvedSku}</p>
                 </div>
               )}
               <div>
