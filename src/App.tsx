@@ -13,7 +13,7 @@ type View = 'home' | 'module' | 'operation' | 'print_labels' | 'ski_reader';
 
 function App() {
   const [authenticated, setAuthenticated] = useState(() => {
-    return sessionStorage.getItem('app_authenticated') === 'true';
+    return localStorage.getItem('app_authenticated') === 'true';
   });
   const [currentView, setCurrentView] = useState<View>('home');
   const [selectedModule, setSelectedModule] = useState<Module | null>(null);
@@ -51,7 +51,7 @@ function App() {
   };
 
   const handleLogout = () => {
-    sessionStorage.removeItem('app_authenticated');
+    localStorage.removeItem('app_authenticated');
     setAuthenticated(false);
     setCurrentView('home');
     setSelectedModule(null);

@@ -34,7 +34,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
       const data = await response.json();
 
       if (data.success) {
-        sessionStorage.setItem('app_authenticated', 'true');
+        localStorage.setItem('app_authenticated', 'true');
         onLogin();
       } else {
         setError('Incorrect username or password');
