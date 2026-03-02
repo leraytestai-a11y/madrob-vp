@@ -9,7 +9,7 @@ import PDFViewerModal from './PDFViewerModal';
 
 const WAX_OIL_TRIGGER_FIELD = 'base_gap_finition';
 const TARGET_FETCH_FIELDS = ['camber_height_before', 'core_thickness', 'spatule_height'];
-const TARGET_WEBHOOK_URL = 'https://n8n.srv833470.hstgr.cloud/webhook-test/7b974084-7f71-4e6e-9c2a-50ed88d1db6c';
+const TARGET_WEBHOOK_URL = 'https://n8n.srv833470.hstgr.cloud/webhook/7b974084-7f71-4e6e-9c2a-50ed88d1db6c';
 
 interface TargetData {
   'final camber min'?: number;
