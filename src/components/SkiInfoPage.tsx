@@ -54,14 +54,22 @@ export default function SkiInfoPage({ serialNumber, side, sku, onDone, onHome }:
       if (infoRes.ok) {
         const json = await infoRes.json();
         console.log('[SkiInfoPage] skiInfo raw:', JSON.stringify(json));
-        const row = Array.isArray(json) ? json[0] : json;
+        let row = Array.isArray(json) ? json[0] : json;
+        if (row && typeof row === 'object' && !row.brand && !row.Brand && !row.token_id) {
+          const nested = Object.values(row).find(v => v && typeof v === 'object' && !Array.isArray(v));
+          if (nested) row = nested;
+        }
         setSkiInfo(row || {});
       }
 
       if (drillingRes.ok) {
         const json = await drillingRes.json();
         console.log('[SkiInfoPage] drillingInfo raw:', JSON.stringify(json));
-        const row = Array.isArray(json) ? json[0] : json;
+        let row = Array.isArray(json) ? json[0] : json;
+        if (row && typeof row === 'object') {
+          const nested = Object.values(row).find(v => v && typeof v === 'object' && !Array.isArray(v));
+          if (nested && typeof nested === 'object' && 'drilling_info' in nested) row = nested;
+        }
         setDrillingInfo(row || {});
       }
     } catch (err) {
