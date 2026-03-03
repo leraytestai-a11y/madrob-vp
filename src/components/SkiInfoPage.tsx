@@ -4,7 +4,7 @@ import { Home, ArrowLeft, Loader2, AlertCircle, Tag, Hash, Cpu, Wifi, CheckCircl
 const BRAND_SKU_TOKEN_WEBHOOK = 'https://n8n.srv833470.hstgr.cloud/webhook/720b5deb-c1f3-4ad6-9c1c-9388981e4a19';
 const DRILLING_WEBHOOK = 'https://n8n.srv833470.hstgr.cloud/webhook/7b974084-7f71-4e6e-9c2a-50ed88d1db6c';
 const MADROB_SYNC_URL = 'https://www.madrob-nfc.com/api/sync';
-const MADROB_SYNC_TOKEN = 'madrob_sync_2025_secure_token';
+const MADROB_SYNC_TOKEN = '825a02222da6bbe105a74c914b115060b1d4139b80c7d2ca852a902851f421d8';
 const NFC_ENDPOINTS = ['https://127.0.0.1:3001', 'http://127.0.0.1:3001'];
 const NFC_BASE_URL = 'https://www.madrob-nfc.com/ski/';
 
