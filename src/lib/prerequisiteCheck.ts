@@ -28,7 +28,7 @@ const PREREQUISITES: Record<string, OperationPrerequisite> = {
     required: ['un-molding time'],
   },
   sanding: {
-    required: ['cut out time'],
+    required: ['cut ou time'],
   },
   sidewall_milling: {
     required: ['sanding time'],
@@ -57,7 +57,7 @@ const TIMESTAMP_LABELS: Record<string, string> = {
   'press in time': 'Press In',
   'press out time': 'Press Out',
   'un-molding time': 'Un-Molding',
-  'cut out time': 'Cut Out',
+  'cut ou time': 'Cut Out',
   'sanding time': 'Sanding',
   'sidewall time': 'Sidewall Milling',
   'soft touch time': 'Soft Touch',
@@ -114,7 +114,7 @@ export async function checkOperationPrerequisites(
     data = Array.isArray(raw) ? (raw[0] as Record<string, unknown>) : raw;
     console.log('[prerequisiteCheck] webhook raw response:', JSON.stringify(raw, null, 2));
     console.log('[prerequisiteCheck] data keys:', Object.keys(data));
-    console.log('[prerequisiteCheck] checking key "cut out time":', data['cut out time']);
+    console.log('[prerequisiteCheck] checking key "cut ou time":', data['cut ou time']);
   } catch {
     return { ok: true };
   }
