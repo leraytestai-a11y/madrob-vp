@@ -28,7 +28,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const n8nUrl = Deno.env.get("N8N_WEBHOOK_URL_PRINT_LABEL") ||
-      "https://n8n.srv833470.hstgr.cloud/webhook/1ee6a6be-6323-41c6-96d9-8dd6ec3e4297";
+      "https://n8n.srv833470.hstgr.cloud/webhook-test/1ee6a6be-6323-41c6-96d9-8dd6ec3e4297";
 
     if (!n8nUrl) {
       await supabase
