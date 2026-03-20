@@ -8,7 +8,7 @@ interface SkiReaderProps {
 }
 
 const WEBHOOK_URL =
-  'https://n8n.srv833470.hstgr.cloud/webhook/720b5deb-c1f3-4ad6-9c1c-9388981e4a19';
+  'https://n8n.srv833470.hstgr.cloud/webhook-test/720b5deb-c1f3-4ad6-9c1c-9388981e4a19';
 
 export default function SkiReader({ onBack, onHome }: SkiReaderProps) {
   const [serialNumber, setSerialNumber] = useState('');
