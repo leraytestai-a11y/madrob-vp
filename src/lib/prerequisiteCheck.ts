@@ -56,7 +56,7 @@ const TIMESTAMP_LABELS: Record<string, string> = {
   'press in time': 'Press In',
   'press out time': 'Press Out',
   'un-molding time': 'Un-Molding',
-  'cut ou time': 'Cut Ou',
+  'cut ou time': 'Cut Out',
   'sanding time': 'Sanding',
   'sidewall time': 'Sidewall Milling',
   'soft touch time': 'Soft Touch',
