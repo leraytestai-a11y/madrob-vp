@@ -28,7 +28,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const n8nUrl = Deno.env.get("N8N_WEBHOOK_URL_MARK_PRINTED") ||
-      "https://n8n.srv833470.hstgr.cloud/webhook-test/0ca91737-3200-4d70-add7-ebb2c6d041cf";
+      "https://n8n.srv833470.hstgr.cloud/webhook/0ca91737-3200-4d70-add7-ebb2c6d041cf";
 
     const n8nRes = await fetch(n8nUrl, {
       method: "POST",
