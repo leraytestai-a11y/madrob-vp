@@ -38,7 +38,8 @@ const PREREQUISITES: Record<string, OperationPrerequisite> = {
   },
   flattening: {
     required: ['soft touch time'],
-   ,
+    conditionalKey: 'base gap repair time',
+    conditionalLabel: 'Base Gap Repair',
   },
   nose_tail_structure: {
     required: ['flattening time'],
