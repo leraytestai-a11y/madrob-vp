@@ -112,6 +112,9 @@ export async function checkOperationPrerequisites(
     }
     const raw = await response.json();
     data = Array.isArray(raw) ? (raw[0] as Record<string, unknown>) : raw;
+    console.log('[prerequisiteCheck] webhook raw response:', JSON.stringify(raw, null, 2));
+    console.log('[prerequisiteCheck] data keys:', Object.keys(data));
+    console.log('[prerequisiteCheck] checking key "cut out time":', data['cut out time']);
   } catch {
     return { ok: true };
   }
