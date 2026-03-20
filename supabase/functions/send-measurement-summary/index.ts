@@ -6,7 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
-const N8N_WEBHOOK_URL = "https://n8n.srv833470.hstgr.cloud/webhook-test/2f9bae56-7a22-4b8d-a63c-a188d64ecd25";
+const N8N_WEBHOOK_URL = "https://n8n.srv833470.hstgr.cloud/webhook/2f9bae56-7a22-4b8d-a63c-a188d64ecd25";
 
 interface MeasurementData {
   field_name: string;
