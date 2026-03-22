@@ -38,6 +38,7 @@ interface TargetData {
   'temperature target'?: number;
   'core pocket front'?: number;
   'core pocket back'?: number;
+  'core centred'?: string;
 }
 
 function getTargetDisplay(fieldName: string, targets: TargetData): string | null {
@@ -170,6 +171,7 @@ export default function DataEntryWorkflow({
   const [targetData, setTargetData] = useState<TargetData>({});
   const [targetLoading, setTargetLoading] = useState(false);
   const [resolvedSku, setResolvedSku] = useState<string | null>(skiRecord.sku);
+  const [coreCentredEnabled, setCoreCentredEnabled] = useState<boolean | null>(null);
   const [showOutOfTargetConfirm, setShowOutOfTargetConfirm] = useState(false);
   const [pendingOutOfTargetValue, setPendingOutOfTargetValue] = useState<string>('');
   const commentSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -312,16 +314,50 @@ export default function DataEntryWorkflow({
   useEffect(() => {
     loadExistingMeasurements();
     loadGlobalComment();
+
+    const hasCoreField = fields.some(f => f.name === 'core_centred');
+    if (hasCoreField) {
+      (async () => {
+        try {
+          let sku = skiRecord.sku;
+          if (!sku) sku = await fetchSkuForSerial(skiRecord.serial_number);
+          const response = await fetch(TARGET_WEBHOOK_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              field: 'core_centred',
+              serial_number: skiRecord.serial_number,
+              sku,
+              side: skiRecord.side,
+            }),
+          });
+          if (response.ok) {
+            const json = await response.json();
+            const row = Array.isArray(json) ? json[0] : json;
+            const val = row?.['core centred'];
+            setCoreCentredEnabled(typeof val === 'string' && val.toLowerCase() === 'ok');
+          } else {
+            setCoreCentredEnabled(false);
+          }
+        } catch {
+          setCoreCentredEnabled(false);
+        }
+      })();
+    }
   }, [loadExistingMeasurements]);
 
   useEffect(() => {
-    const visible = fields.filter(field => isFieldVisible(field, existingMeasurements));
+    const visible = fields.filter(field => {
+      if (!isFieldVisible(field, existingMeasurements)) return false;
+      if (field.name === 'core_centred' && coreCentredEnabled !== true) return false;
+      return true;
+    });
     setVisibleFields(prev => {
       const prevIds = prev.map(f => f.id).join(',');
       const nextIds = visible.map(f => f.id).join(',');
       return prevIds === nextIds ? prev : visible;
     });
-  }, [fields, existingMeasurements]);
+  }, [fields, existingMeasurements, coreCentredEnabled]);
 
   useEffect(() => {
     if (!currentField) return;
