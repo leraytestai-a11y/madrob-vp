@@ -13,6 +13,7 @@ const FINAL_QC_OPERATION = 'final_qc';
 const WAX_OIL_TRIGGER_FIELD = 'base_gap_finition';
 const TARGET_FETCH_FIELDS = [
   'camber_height_before',
+  'finale_camber_height_mm',
   'core_thickness',
   'spatule_height',
   'tail_height',
