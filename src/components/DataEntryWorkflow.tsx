@@ -40,7 +40,7 @@ interface TargetData {
 }
 
 function getTargetDisplay(fieldName: string, targets: TargetData): string | null {
-  if (fieldName === 'camber_height_before' || fieldName === 'camber_height') {
+  if (fieldName === 'camber_height_before' || fieldName === 'camber_height' || fieldName === 'finale_camber_height_mm') {
     const min = targets['final camber min'];
     const max = targets['final camber max'];
     if (min != null && max != null) return `Target: ${min} – ${max} mm`;
@@ -85,7 +85,7 @@ function isOutOfTarget(fieldName: string, rawValue: string, targets: TargetData)
   const val = parseFloat(rawValue);
   if (isNaN(val)) return false;
 
-  if (fieldName === 'camber_height_before' || fieldName === 'camber_height') {
+  if (fieldName === 'camber_height_before' || fieldName === 'camber_height' || fieldName === 'finale_camber_height_mm') {
     const min = targets['final camber min'];
     const max = targets['final camber max'];
     if (min != null && val < min) return true;
