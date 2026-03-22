@@ -255,7 +255,11 @@ export default function DataEntryWorkflow({
   }
 
   function computeVisibleFields(measurementsMap: Map<string, any>): MeasurementField[] {
-    return fields.filter(field => isFieldVisible(field, measurementsMap));
+    return fields.filter(field => {
+      if (!isFieldVisible(field, measurementsMap)) return false;
+      if (field.name === 'core_centred' && coreCentredEnabled !== true) return false;
+      return true;
+    });
   }
 
   const loadExistingMeasurements = useCallback(async (): Promise<Map<string, any>> => {
