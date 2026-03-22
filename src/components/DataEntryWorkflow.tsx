@@ -11,7 +11,19 @@ import SkiInfoPage from './SkiInfoPage';
 const FINAL_QC_OPERATION = 'final_qc';
 
 const WAX_OIL_TRIGGER_FIELD = 'base_gap_finition';
-const TARGET_FETCH_FIELDS = ['camber_height_before', 'core_thickness', 'spatule_height'];
+const TARGET_FETCH_FIELDS = [
+  'camber_height_before',
+  'core_thickness',
+  'spatule_height',
+  'tail_height',
+  'pressure_in',
+  'pressure_out',
+  'temperature',
+  'temp_out_press_down',
+  'temp_out_press_up',
+  'core_pocket_deepness_front',
+  'core_pocket_deepness_back',
+];
 const TARGET_WEBHOOK_URL = 'https://n8n.srv833470.hstgr.cloud/webhook/7b974084-7f71-4e6e-9c2a-50ed88d1db6c';
 
 interface TargetData {
@@ -19,7 +31,12 @@ interface TargetData {
   'final camber max'?: number;
   'final nose min'?: number;
   'final nose max'?: number;
+  'tail height'?: number;
   'core thickness target'?: number;
+  'pressure'?: number;
+  'temperature target'?: number;
+  'core pocket front'?: number;
+  'core pocket back'?: number;
 }
 
 function getTargetDisplay(fieldName: string, targets: TargetData): string | null {
@@ -39,6 +56,26 @@ function getTargetDisplay(fieldName: string, targets: TargetData): string | null
   }
   if (fieldName === 'core_thickness') {
     const target = targets['core thickness target'];
+    if (target != null) return `Target: ${target} mm`;
+  }
+  if (fieldName === 'tail_height') {
+    const target = targets['tail height'];
+    if (target != null) return `Target: ${target} mm`;
+  }
+  if (fieldName === 'pressure_in' || fieldName === 'pressure_out') {
+    const target = targets['pressure'];
+    if (target != null) return `Target: ${target} bar`;
+  }
+  if (fieldName === 'temperature' || fieldName === 'temp_out_press_down' || fieldName === 'temp_out_press_up') {
+    const target = targets['temperature target'];
+    if (target != null) return `Target: ${target} °C`;
+  }
+  if (fieldName === 'core_pocket_deepness_front') {
+    const target = targets['core pocket front'];
+    if (target != null) return `Target: ${target} mm`;
+  }
+  if (fieldName === 'core_pocket_deepness_back') {
+    const target = targets['core pocket back'];
     if (target != null) return `Target: ${target} mm`;
   }
   return null;
