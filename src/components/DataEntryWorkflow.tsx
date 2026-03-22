@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { ArrowLeft, Home, CheckCircle, SkipForward, ChevronLeft, HelpCircle, MessageSquare, Droplets, XCircle } from 'lucide-react';
+import { ArrowLeft, Home, CheckCircle, SkipForward, ChevronLeft, HelpCircle, MessageSquare, Droplets, XCircle, AlertTriangle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { fetchSkuForSerial } from '../lib/prerequisiteCheck';
 import { SkiRecord, MeasurementField } from '../types';
@@ -81,6 +81,57 @@ function getTargetDisplay(fieldName: string, targets: TargetData): string | null
   return null;
 }
 
+function isOutOfTarget(fieldName: string, rawValue: string, targets: TargetData): boolean {
+  const val = parseFloat(rawValue);
+  if (isNaN(val)) return false;
+
+  if (fieldName === 'camber_height_before' || fieldName === 'camber_height') {
+    const min = targets['final camber min'];
+    const max = targets['final camber max'];
+    if (min != null && val < min) return true;
+    if (max != null && val > max) return true;
+    return false;
+  }
+  if (fieldName === 'spatule_height') {
+    const min = targets['final nose min'];
+    const max = targets['final nose max'];
+    if (min != null && val < min) return true;
+    if (max != null && val > max) return true;
+    return false;
+  }
+  if (fieldName === 'tail_height') {
+    const target = targets['tail height'];
+    if (target != null && (val < target * 0.95 || val > target * 1.05)) return true;
+    return false;
+  }
+  if (fieldName === 'core_thickness') {
+    const target = targets['core thickness target'];
+    if (target != null && (val < target * 0.95 || val > target * 1.05)) return true;
+    return false;
+  }
+  if (fieldName === 'pressure_in' || fieldName === 'pressure_out') {
+    const target = targets['pressure'];
+    if (target != null && (val < target * 0.95 || val > target * 1.05)) return true;
+    return false;
+  }
+  if (fieldName === 'temp_out_press_down' || fieldName === 'temperature' || fieldName === 'temp_out_press_up') {
+    const target = targets['temperature target'];
+    if (target != null && (val < target * 0.95 || val > target * 1.05)) return true;
+    return false;
+  }
+  if (fieldName === 'core_pocket_deepness_front') {
+    const target = targets['core pocket front'];
+    if (target != null && (val < target * 0.95 || val > target * 1.05)) return true;
+    return false;
+  }
+  if (fieldName === 'core_pocket_deepness_back') {
+    const target = targets['core pocket back'];
+    if (target != null && (val < target * 0.95 || val > target * 1.05)) return true;
+    return false;
+  }
+  return false;
+}
+
 interface DataEntryWorkflowProps {
   skiRecord: SkiRecord;
   pairedSkiRecord?: SkiRecord | null;
@@ -118,6 +169,8 @@ export default function DataEntryWorkflow({
   const [targetData, setTargetData] = useState<TargetData>({});
   const [targetLoading, setTargetLoading] = useState(false);
   const [resolvedSku, setResolvedSku] = useState<string | null>(skiRecord.sku);
+  const [showOutOfTargetConfirm, setShowOutOfTargetConfirm] = useState(false);
+  const [pendingOutOfTargetValue, setPendingOutOfTargetValue] = useState<string>('');
   const commentSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const currentField = visibleFields[currentFieldIndex];
@@ -329,11 +382,26 @@ export default function DataEntryWorkflow({
   async function handleValidate() {
     if (!value.trim() && currentField.required) return;
 
+    if (
+      currentField.field_type === 'numeric' &&
+      TARGET_FETCH_FIELDS.includes(currentField.name) &&
+      Object.keys(targetData).length > 0 &&
+      isOutOfTarget(currentField.name, value.trim(), targetData)
+    ) {
+      setPendingOutOfTargetValue(value.trim());
+      setShowOutOfTargetConfirm(true);
+      return;
+    }
+
+    await doSaveAndAdvance(value.trim());
+  }
+
+  async function doSaveAndAdvance(val: string) {
     setLoading(true);
     try {
-      const saves = [saveMeasurementForRecord(skiRecord.id, currentField.id, value.trim(), false)];
+      const saves = [saveMeasurementForRecord(skiRecord.id, currentField.id, val, false)];
       if (pairedSkiRecord) {
-        saves.push(saveMeasurementForRecord(pairedSkiRecord.id, currentField.id, value.trim(), false));
+        saves.push(saveMeasurementForRecord(pairedSkiRecord.id, currentField.id, val, false));
       }
       const results = await Promise.all(saves);
       const firstError = results.find(r => r.error)?.error;
@@ -596,6 +664,64 @@ export default function DataEntryWorkflow({
               >
                 <XCircle className="w-5 h-5" />
                 Confirm Fail
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (showOutOfTargetConfirm) {
+    const targetDisplay = getTargetDisplay(currentField?.name ?? '', targetData);
+    return (
+      <div className="min-h-screen bg-[#0a1628] flex items-center justify-center p-6">
+        <div className="max-w-lg w-full">
+          <div className="bg-[#1a2942] border border-amber-500/40 rounded-3xl p-10 text-center">
+            <div className="flex justify-center mb-8">
+              <div className="bg-amber-500/10 rounded-full p-6 border border-amber-500/30">
+                <AlertTriangle className="w-16 h-16 text-amber-400" />
+              </div>
+            </div>
+
+            <h2 className="text-3xl font-bold text-white mb-4">
+              Value Out of Target
+            </h2>
+
+            <div className="bg-[#0a1628] rounded-2xl px-8 py-6 mb-8 border border-slate-700/50">
+              <p className="text-amber-300 text-xl font-semibold mb-2">
+                Measured: {pendingOutOfTargetValue} {currentField?.unit ?? ''}
+              </p>
+              {targetDisplay && (
+                <p className="text-slate-400 text-base">{targetDisplay}</p>
+              )}
+            </div>
+
+            <p className="text-slate-500 text-sm mb-8">
+              The entered value is outside the expected range. Do you want to correct it or confirm anyway?
+            </p>
+
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                onClick={() => {
+                  setShowOutOfTargetConfirm(false);
+                  setPendingOutOfTargetValue('');
+                }}
+                className="bg-slate-700 hover:bg-slate-600 text-white font-bold py-4 rounded-xl transition-colors text-lg"
+              >
+                Correct
+              </button>
+              <button
+                onClick={async () => {
+                  setShowOutOfTargetConfirm(false);
+                  await doSaveAndAdvance(pendingOutOfTargetValue);
+                  setPendingOutOfTargetValue('');
+                }}
+                disabled={loading}
+                className="bg-amber-600 hover:bg-amber-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl transition-colors text-lg flex items-center justify-center gap-2"
+              >
+                <CheckCircle className="w-5 h-5" />
+                Confirm
               </button>
             </div>
           </div>
