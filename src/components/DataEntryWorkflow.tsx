@@ -66,7 +66,7 @@ function getTargetDisplay(fieldName: string, targets: TargetData): string | null
     const target = targets['pressure'];
     if (target != null) return `Target: ${target} bar`;
   }
-  if (fieldName === 'temperature' || fieldName === 'temp_out_press_down' || fieldName === 'temp_out_press_up') {
+  if (fieldName === 'temp_out_press_down') {
     const target = targets['temperature target'];
     if (target != null) return `Target: ${target} °C`;
   }
