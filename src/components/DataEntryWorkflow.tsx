@@ -114,7 +114,7 @@ function isOutOfTarget(fieldName: string, rawValue: string, targets: TargetData)
     if (target != null && (val < target * 0.95 || val > target * 1.05)) return true;
     return false;
   }
-  if (fieldName === 'temp_out_press_down' || fieldName === 'temperature' || fieldName === 'temp_out_press_up') {
+  if (fieldName === 'temp_out_press_down') {
     const target = targets['temperature target'];
     if (target != null && (val < target * 0.95 || val > target * 1.05)) return true;
     return false;
