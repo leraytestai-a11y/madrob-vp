@@ -931,6 +931,41 @@ export default function DataEntryWorkflow({
             </div>
           )}
 
+          {currentField.field_type === 'pass_corrected_fail' && (
+            <div className="grid grid-cols-3 gap-4 mb-8">
+              <button
+                onClick={() => handlePassFailSelect('pass')}
+                className={`py-12 rounded-xl text-2xl font-semibold transition-all ${
+                  value === 'pass'
+                    ? 'bg-green-600 text-white border-2 border-green-400 scale-105'
+                    : 'bg-green-700 text-white border-2 border-green-600 hover:bg-green-600'
+                }`}
+              >
+                PASS
+              </button>
+              <button
+                onClick={() => handlePassFailSelect('corrected')}
+                className={`py-12 rounded-xl text-2xl font-semibold transition-all ${
+                  value === 'corrected'
+                    ? 'bg-orange-600 text-white border-2 border-orange-400 scale-105'
+                    : 'bg-orange-700 text-white border-2 border-orange-600 hover:bg-orange-600'
+                }`}
+              >
+                CORRECTED
+              </button>
+              <button
+                onClick={() => handlePassFailSelect('fail')}
+                className={`py-12 rounded-xl text-2xl font-semibold transition-all ${
+                  value === 'fail'
+                    ? 'bg-red-600 text-white border-2 border-red-400 scale-105'
+                    : 'bg-red-700 text-white border-2 border-red-600 hover:bg-red-600'
+                }`}
+              >
+                FAIL
+              </button>
+            </div>
+          )}
+
           {currentField.field_type === 'text' && (
             <div className="mb-8">
               <textarea

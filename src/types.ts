@@ -33,7 +33,7 @@ export interface MeasurementField {
   operation_id: string;
   name: string;
   display_name: string;
-  field_type: 'numeric' | 'pass_fail' | 'pass_repair' | 'text' | 'select';
+  field_type: 'numeric' | 'pass_fail' | 'pass_repair' | 'pass_corrected_fail' | 'text' | 'select';
   unit: string | null;
   required: boolean;
   order: number;

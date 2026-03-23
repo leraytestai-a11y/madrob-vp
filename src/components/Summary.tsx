@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, Home, CheckCircle, AlertCircle, User, Calendar, Clock, Edit2, Save, X, MessageSquare, XCircle } from 'lucide-react';
+import { ArrowLeft, Home, CheckCircle, AlertCircle, User, Calendar, Clock, CreditCard as Edit2, Save, X, MessageSquare, XCircle } from 'lucide-react';
 import { SkiRecord, MeasurementField } from '../types';
 import { useOperator } from '../contexts/OperatorContext';
 
@@ -53,6 +53,12 @@ export default function Summary({
     if (field.field_type === 'pass_repair') {
       if (value === 'pass') return 'bg-green-600 text-white border-green-500';
       return 'bg-orange-600 text-white border-orange-500';
+    }
+
+    if (field.field_type === 'pass_corrected_fail') {
+      if (value === 'pass') return 'bg-green-600 text-white border-green-500';
+      if (value === 'corrected') return 'bg-orange-600 text-white border-orange-500';
+      return 'bg-red-600 text-white border-red-500';
     }
 
     if (field.field_type === 'select') {
